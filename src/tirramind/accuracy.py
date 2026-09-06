@@ -77,6 +77,8 @@ def accuracy_table(links: pd.DataFrame, *, n_boot: int = 1000, seed: int = 7) ->
     relationship, by match_method."""
     L = links.copy()
     L = L[L["notice_date"].ne("")]
+    if "window_complete" in L:
+        L = L[L["window_complete"]]
     L["g"] = cluster_key(L)
     segments = [("all", L)]
     for rel, sub in L.groupby("relationship"):

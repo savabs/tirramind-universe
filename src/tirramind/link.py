@@ -19,7 +19,7 @@ WINDOW_AFTER = 90
 LINK_COLUMNS = [
     "accession_144", "issuer_cik", "owner_cik", "insider_name", "relationship", "notice_date",
     "shares_planned", "dollar_value_planned", "match_method", "n_sales", "shares_sold",
-    "executed_fraction", "first_sale_date", "days_to_first_sale", "vwap_sold",
+    "executed_fraction", "first_sale_date", "days_to_first_sale", "vwap_sold", "window_complete",
 ]
 _SUFFIX = re.compile(r"\b(jr|sr|ii|iii|iv|mr|mrs|ms|dr)\b\.?")
 
@@ -31,7 +31,7 @@ def normalise_name(s: str) -> str:
     return " ".join(sorted(toks))
 
 
-def link(f144: pd.DataFrame, f4: pd.DataFrame) -> pd.DataFrame:
+def link(f144: pd.DataFrame, f4: pd.DataFrame, *, coverage_end: str | None = None) -> pd.DataFrame:
     """``f144`` columns: accession, issuer_cik, owner_cik ('' if unknown),
     insider_name, relationship, notice_date, shares_to_sell, dollar_value.
     ``f4`` columns: issuer_cik, owner_cik, owner_name, transaction_date, code,
@@ -39,6 +39,9 @@ def link(f144: pd.DataFrame, f4: pd.DataFrame) -> pd.DataFrame:
     sales = f4[f4["code"].eq("S") & (f4["shares"] > 0)].copy()
     sales["t"] = pd.to_datetime(sales["transaction_date"], errors="coerce")
     sales = sales.dropna(subset=["t"])
+    # Form 4 coverage ends where dense data ends; a notice whose 90-day window
+    # runs past that cannot be judged and must not count as "not executed".
+    cov_end = pd.to_datetime(coverage_end) if coverage_end else sales["t"].max()
     sales["name_key"] = sales["owner_name"].map(normalise_name)
     by_cik = {k: g for k, g in sales.groupby(["issuer_cik", "owner_cik"])}
     by_name = {k: g for k, g in sales.groupby(["issuer_cik", "name_key"])}
@@ -70,5 +73,6 @@ def link(f144: pd.DataFrame, f4: pd.DataFrame) -> pd.DataFrame:
             "first_sale_date": first.strftime("%Y-%m-%d") if not pd.isna(first) else "",
             "days_to_first_sale": int((first - notice).days) if not pd.isna(first) else -1,
             "vwap_sold": float((w["shares"] * w["price"]).sum() / sold) if sold > 0 else float("nan"),
+            "window_complete": bool(hi <= cov_end),
         })
     return pd.DataFrame(out, columns=LINK_COLUMNS)

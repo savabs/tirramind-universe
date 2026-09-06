@@ -42,6 +42,13 @@ def test_no_match_is_zero_not_missing():
     assert d.n_sales == 0 and d.executed_fraction == 0.0
 
 
+def test_window_complete_flag():
+    L = link(F144, F4, coverage_end="2024-05-01").set_index("accession_144")
+    assert not L.loc["a"].window_complete            # notice 2024-04-01 + 90d > coverage
+    L2 = link(F144, F4, coverage_end="2024-12-31").set_index("accession_144")
+    assert L2.loc["a"].window_complete
+
+
 def test_normalise_name():
     assert normalise_name("COOK TIMOTHY D") == normalise_name("Timothy D. Cook")
     assert normalise_name("Doe, Jane Q. Jr.") == normalise_name("JANE Q DOE")

@@ -46,13 +46,16 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     f4 = read_ledger("form4", root=ledger_root)
     insider = {}
     if not f144.empty and not f4.empty:
-        links = link(f144.rename(columns={"accession": "accession"}), f4)
+        # dense coverage = bulk-dataset rows; EFTS rows after that are sparse until the fill completes
+        cov = f4[f4["source"].str.startswith("dataset")]["transaction_date"].max() if "source" in f4 else None
+        links = link(f144, f4, coverage_end=cov)
         acc = accuracy_table(links)
         links.to_parquet(os.path.join(out, "form144_links.parquet"), index=False)
         acc.to_parquet(os.path.join(out, "accuracy.parquet"), index=False)
         render_weekly(links, acc, f144, out=os.path.join(os.path.dirname(out), "docs"))
         mm = links["match_method"].value_counts(normalize=True).to_dict()
-        insider = {"form144": int(len(f144)), "form4_rows": int(len(f4)),
+        insider = {"form144": int(len(f144)), "form4_rows": int(len(f4)), "form4_coverage_end": str(cov),
+                   "window_complete": int(links["window_complete"].sum()),
                    "form4_sales": int((f4["code"] == "S").sum()),
                    "links": int(len(links)), "match_method_shares": {k: round(float(v), 4) for k, v in mm.items()},
                    "p_executed_90d_all": float(acc[(acc.segment == "all") & (acc.horizon_days == 90)]["p_executed"].iloc[0])}
