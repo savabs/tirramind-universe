@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tirramind"
+version = "0.1.0"
+description = "Survivorship-bias-free US listing ledger with delisting causes and a Form 144 -> Form 4 insider ledger, reconciled daily from SEC public filings"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "savabs" }]
+keywords = ["sec", "delistings", "survivorship-bias", "security-master", "form-144", "form-4", "insider-trading", "quant"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = ["requests>=2.31", "pandas>=2.0", "pyarrow>=14"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.4"]
+
+[project.urls]
+Repository = "https://github.com/savabs/tirramind-universe"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tirramind"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
