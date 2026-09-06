@@ -69,7 +69,7 @@ class SecClient:
         key = hashlib.sha256(url.encode()).hexdigest()
         return os.path.join(self.cache_dir, key[:2], key)
 
-    def get(self, url: str, *, cache: bool = False, retries: int = 4, **kw) -> bytes:
+    def get(self, url: str, *, cache: bool = False, retries: int = 5, **kw) -> bytes:
         cp = self._cache_path(url) if cache else None
         if cp and os.path.exists(cp):
             with open(cp, "rb") as fh:
@@ -78,7 +78,7 @@ class SecClient:
         for attempt in range(retries + 1):
             self._throttle()
             resp = self.session.get(url, timeout=kw.pop("timeout", 30), **kw)
-            if resp.status_code in (429, 503) and attempt < retries:
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < retries:
                 self._sleep(backoff)
                 backoff *= 2
                 continue

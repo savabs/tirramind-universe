@@ -38,3 +38,24 @@ def test_throttle_never_exceeds_ten_per_second():
     # And at no point were more than 10 timestamps within any 1s window.
     stamps = list(c._sent)
     assert len(stamps) <= 10
+
+
+def test_retries_on_500_then_succeeds(monkeypatch):
+    slept = []
+    c = SecClient("ops@example.com", sleep=slept.append)
+    calls = {"n": 0}
+
+    class R:
+        def __init__(self, code, content=b"ok"):
+            self.status_code, self.content = code, content
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+
+    def fake_get(url, timeout=30, **kw):
+        calls["n"] += 1
+        return R(500) if calls["n"] < 3 else R(200)
+
+    monkeypatch.setattr(c.session, "get", fake_get)
+    assert c.get("https://efts.sec.gov/x") == b"ok"
+    assert calls["n"] == 3 and slept[:2] == [1.0, 2.0]
