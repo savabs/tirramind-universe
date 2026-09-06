@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from . import __version__
+from .accuracy import accuracy_table
 from .diff import events_over_history
+from .link import link
+from .page import render_weekly
 from .ledger import DEFAULT_ROOT as LEDGER_ROOT, read as read_ledger
 from .reconcile import CAUSES, reconcile, summary
 from .store import DEFAULT_ROOT as SNAP_ROOT, load_snapshot, snapshots_for
@@ -38,6 +41,22 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     filings.drop(columns=[c for c in ("filed_ts",) if c in filings]).to_parquet(
         os.path.join(out, "filings.parquet"), index=False)
 
+    # Insider ledger: optional until C2 has run at least once.
+    f144 = read_ledger("form144", root=ledger_root)
+    f4 = read_ledger("form4", root=ledger_root)
+    insider = {}
+    if not f144.empty and not f4.empty:
+        links = link(f144.rename(columns={"accession": "accession"}), f4)
+        acc = accuracy_table(links)
+        links.to_parquet(os.path.join(out, "form144_links.parquet"), index=False)
+        acc.to_parquet(os.path.join(out, "accuracy.parquet"), index=False)
+        render_weekly(links, acc, f144, out=os.path.join(os.path.dirname(out), "docs"))
+        mm = links["match_method"].value_counts(normalize=True).to_dict()
+        insider = {"form144": int(len(f144)), "form4_rows": int(len(f4)),
+                   "form4_sales": int((f4["code"] == "S").sum()),
+                   "links": int(len(links)), "match_method_shares": {k: round(float(v), 4) for k, v in mm.items()},
+                   "p_executed_90d_all": float(acc[(acc.segment == "all") & (acc.horizon_days == 90)]["p_executed"].iloc[0])}
+
     shares = summary(delist)
     stats = {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -52,6 +71,7 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
         "cause_shares": {c: round(float(shares[c]), 4) for c in CAUSES},
         "filings": int(len(filings)),
         "filings_by_form": filings["form"].value_counts().to_dict(),
+        "insider": insider,
     }
     _write_readme(out, stats)
     return stats
@@ -61,6 +81,20 @@ def _write_readme(out: str, s: dict) -> None:
     ev = "\n".join(f"| {k} | {v} |" for k, v in sorted(s["events_by_type"].items()))
     causes = "\n".join(f"| {k} | {v:.1%} |" for k, v in s["cause_shares"].items())
     forms = "\n".join(f"| {k} | {v} |" for k, v in sorted(s["filings_by_form"].items()))
+    ins = s.get("insider") or {}
+    insider = "" if not ins else f"""
+## Form 144 → Form 4 ledger
+| | |
+|---|---|
+| Form 144 notices | {ins['form144']} |
+| Form 4 transaction rows | {ins['form4_rows']} (sales: {ins['form4_sales']}) |
+| linked notices | {ins['links']} |
+| match method | {', '.join(f'{k} {v:.0%}' for k, v in ins['match_method_shares'].items())} |
+| P(sale within 90d), all | {ins['p_executed_90d_all']:.1%} |
+
+Files: `form144_links.parquet` (one row per notice), `accuracy.parquet`
+(rates with cluster-bootstrap CIs and effective n). Weekly page: `docs/index.html`.
+"""
     text = f"""# Data
 
 Built {s['built_at']} by tirramind {s['version']}. Derived from SEC public
@@ -97,7 +131,7 @@ delisting; that share is inside `UNKNOWN`.
 | form | count |
 |---|---|
 {forms}
-"""
+{insider}"""
     with open(os.path.join(out, "README.md"), "w", encoding="utf-8") as fh:
         fh.write(text)
 
