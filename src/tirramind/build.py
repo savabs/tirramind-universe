@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import __version__
 from .accuracy import accuracy_table
-from .diff import events_over_history
+from .diff import annotate, events_over_history, permanent_removals
 from .link import link
 from .page import render_weekly
 from .ledger import DEFAULT_ROOT as LEDGER_ROOT, read as read_ledger
@@ -29,11 +29,11 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     if not snaps:
         raise RuntimeError("no ticker snapshots; run tickers.snapshot_current first")
     latest = load_snapshot(snap_root, snaps[-1]["path"])
-    events = events_over_history("tickers", root=snap_root)
+    events = annotate(events_over_history("tickers", root=snap_root))
     filings = read_ledger("filings", root=ledger_root)
     if filings.empty:
         raise RuntimeError("filings ledger is empty; run filings.backfill first")
-    delist = reconcile(events, filings)
+    delist = reconcile(permanent_removals(events), filings)
 
     latest.to_parquet(os.path.join(out, "tickers_latest.parquet"), index=False)
     events.to_parquet(os.path.join(out, "events.parquet"), index=False)
@@ -67,6 +67,10 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
         "tickers_latest": int(len(latest)),
         "events": int(len(events)),
         "events_by_type": events["event"].value_counts().to_dict(),
+        "suspect_steps": sorted(set(events.loc[events.suspect, "to_captured_at"].str[:10])),
+        "raw_removals": int(events.event.eq("DELISTED_FROM_MAP").sum()),
+        "relisted_share": round(float((events.event.eq("DELISTED_FROM_MAP") & events.relisted_at.ne("")).sum()
+                                      / max(1, events.event.eq("DELISTED_FROM_MAP").sum())), 4),
         "delistings": int(len(delist)),
         "cause_shares": {c: round(float(shares[c]), 4) for c in CAUSES},
         "filings": int(len(filings)),
@@ -109,13 +113,21 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 |---|---|---|
 | `tickers_latest.parquet` | {s['tickers_latest']} | current (cik, ticker, name, exchange) |
 | `events.parquet` | {s['events']} | every change between consecutive snapshots |
-| `delistings.parquet` | {s['delistings']} | DELISTED_FROM_MAP events with a cause and evidence accessions |
+| `delistings.parquet` | {s['delistings']} | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
 | `filings.parquet` | {s['filings']} | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
 ## Events ({s['snapshots']} snapshots, {s['first_snapshot'][:10]} → {s['latest_snapshot'][:10]})
 | event | count |
 |---|---|
 {ev}
+
+## What a "removal" is
+`events.parquet` has {s['raw_removals']} raw `DELISTED_FROM_MAP` rows. **{s['relisted_share']:.0%} of
+them re-appear later** (`relisted_at`) — the SEC file churns for housekeeping
+reasons. Steps that removed ≥1,500 tickers at once are partial or
+format-shifted captures and are flagged `suspect`: {', '.join(s['suspect_steps']) or 'none'}.
+Only removals that are neither re-listed nor suspect are treated as
+delistings below. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within

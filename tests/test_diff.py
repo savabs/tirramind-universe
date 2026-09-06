@@ -49,3 +49,23 @@ def test_empty_exchange_does_not_emit_exchange_change():
 
 def test_identical_frames_no_events():
     assert diff_frames(PREV, PREV).empty
+
+
+def test_annotate_flags_flaps_suspect_steps_and_cosmetic_renames():
+    from tirramind.diff import SUSPECT_REMOVALS, annotate, permanent_removals
+    cols = ["event", "cik", "ticker", "name", "exchange", "prev_ticker", "prev_name", "prev_exchange",
+            "from_captured_at", "to_captured_at", "from_digest", "to_digest"]
+    ev = pd.DataFrame([
+        ["DELISTED_FROM_MAP", "1", "AAA", "A", "", "AAA", "A", "", "t0", "t1", "", ""],   # flap: relisted at t2
+        ["LISTED",            "1", "AAA", "A", "", "", "", "", "t1", "t2", "", ""],
+        ["DELISTED_FROM_MAP", "2", "BBB", "B", "", "BBB", "B", "", "t1", "t2", "", ""],   # permanent
+        ["NAME_CHANGED",      "3", "CCC", "APPLE INC.", "", "CCC", "Apple Inc", "", "t1", "t2", "", ""],
+        ["NAME_CHANGED",      "4", "DDD", "New Co", "", "DDD", "Old Co", "", "t1", "t2", "", ""],
+    ] + [["DELISTED_FROM_MAP", str(100 + i), "X%d" % i, "", "", "X%d" % i, "", "", "t2", "t3", "", ""]
+         for i in range(SUSPECT_REMOVALS)], columns=cols)
+    a = annotate(ev)
+    assert a.loc[0, "relisted_at"] == "t2" and a.loc[2, "relisted_at"] == ""
+    assert bool(a.loc[3, "cosmetic"]) and not bool(a.loc[4, "cosmetic"])
+    assert a[a.to_captured_at.eq("t3")].suspect.all() and not a.loc[2, "suspect"]
+    perm = permanent_removals(a)
+    assert list(perm.cik) == ["2"]
