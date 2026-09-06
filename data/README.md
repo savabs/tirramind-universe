@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-06T09:46:12+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-06T09:48:51+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -31,9 +31,9 @@ format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
 Of the removals that are neither re-listed nor suspect (14284),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
-not delistings (SYMBOL_CHANGED 1529, EXCHANGE_TRANSFER 46).
+not delistings (SYMBOL_CHANGED 1413, EXCHANGE_TRANSFER 234).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12709 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12637 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -44,13 +44,13 @@ delisting; that share is inside `UNKNOWN`.
 | cause | share |
 |---|---|
 | BANKRUPTCY | 3.3% |
-| EXCHANGE_DELISTING | 26.0% |
-| MERGER_ACQUISITION | 20.1% |
+| EXCHANGE_DELISTING | 25.8% |
+| MERGER_ACQUISITION | 20.0% |
 | VOLUNTARY_DELISTING | 0.6% |
 | DEREGISTRATION | 2.0% |
 | EXCHANGE_TRANSFER | 0.0% |
 | SYMBOL_CHANGED | 0.0% |
-| UNKNOWN | 48.0% |
+| UNKNOWN | 48.3% |
 
 ### By exchange, removals since 2022
 | exchange | BANKRUPTCY | DEREGISTRATION | EXCHANGE_DELISTING | MERGER_ACQUISITION | UNKNOWN | VOLUNTARY_DELISTING | total | known |
@@ -58,9 +58,9 @@ delisting; that share is inside `UNKNOWN`.
 | (blank) | 62 | 26 | 117 | 30 | 1112 | 6 | 1353 | 18% |
 | CBOE | 0 | 0 | 18 | 0 | 10 | 0 | 28 | 64% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 34 | 4 | 1054 | 554 | 110 | 12 | 1768 | 94% |
-| Nasdaq | 103 | 17 | 1432 | 1206 | 207 | 38 | 3003 | 93% |
-| OTC | 154 | 159 | 252 | 110 | 2638 | 16 | 3329 | 21% |
+| NYSE | 34 | 4 | 1040 | 546 | 110 | 12 | 1746 | 94% |
+| Nasdaq | 103 | 17 | 1401 | 1193 | 207 | 38 | 2959 | 93% |
+| OTC | 154 | 159 | 253 | 108 | 2638 | 16 | 3328 | 21% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
 going-private of an ADR shows as `EXCHANGE_DELISTING` (Form 25 only) or
