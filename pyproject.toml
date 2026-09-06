@@ -30,6 +30,9 @@ Repository = "https://github.com/savabs/tirramind-universe"
 [tool.hatch.build.targets.wheel]
 packages = ["src/tirramind"]
 
+[tool.hatch.build.targets.sdist]
+only-include = ["src/tirramind", "README.md", "LICENSE", "pyproject.toml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
