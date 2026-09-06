@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<edgarSubmission><formData>
+  <issuerInfo><issuerName>X Corp</issuerName><nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>Jane Doe</nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold></issuerInfo>
+  <securitiesInformation><noOfUnitsSold>10</noOfUnitsSold><aggregateMarketValue>100</aggregateMarketValue><approxSaleDate>01/02/2024</approxSaleDate></securitiesInformation>
+  <securitiesToBeSold><isGiftTransaction>Y</isGiftTransaction></securitiesToBeSold>
+  <noticeSignature><noticeDate>01/01/2024</noticeDate></noticeSignature>
+</formData></edgarSubmission>

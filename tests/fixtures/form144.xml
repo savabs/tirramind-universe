@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<edgarSubmission xmlns="http://www.sec.gov/edgar/form144">
+  <formData>
+    <issuerInfo>
+      <issuerName>Apple Inc.</issuerName>
+      <nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>Timothy D. Cook</nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>
+      <relationshipsToIssuer><relationshipToIssuer>Officer</relationshipToIssuer></relationshipsToIssuer>
+    </issuerInfo>
+    <securitiesInformation>
+      <noOfUnitsSold>196410</noOfUnitsSold>
+      <aggregateMarketValue>33291495.00</aggregateMarketValue>
+      <noOfUnitsOutstanding>15441881000</noOfUnitsOutstanding>
+      <approxSaleDate>04/02/2024</approxSaleDate>
+      <securitiesExchangeName>NASDAQ</securitiesExchangeName>
+      <brokerOrMarketmakerDetails><name>Goldman Sachs &amp; Co. LLC</name></brokerOrMarketmakerDetails>
+    </securitiesInformation>
+    <securitiesToBeSold>
+      <natureOfAcquisitionTransaction>Restricted Stock Unit Vesting</natureOfAcquisitionTransaction>
+      <acquiredDate>04/01/2024</acquiredDate>
+      <amountOfSecuritiesAcquired>196410</amountOfSecuritiesAcquired>
+      <isGiftTransaction>N</isGiftTransaction>
+    </securitiesToBeSold>
+    <noticeSignature><noticeDate>04/01/2024</noticeDate><planAdoptionDates>08/29/2023</planAdoptionDates></noticeSignature>
+  </formData>
+</edgarSubmission>

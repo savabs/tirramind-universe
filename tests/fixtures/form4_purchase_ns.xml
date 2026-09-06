@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ownershipDocument xmlns="http://www.sec.gov/edgar/ownership">
+  <issuer><issuerCik>1018724</issuerCik><issuerName>AMAZON COM INC</issuerName><issuerTradingSymbol>AMZN</issuerTradingSymbol></issuer>
+  <reportingOwner>
+    <reportingOwnerId><rptOwnerCik>0001043298</rptOwnerCik><rptOwnerName>BEZOS JEFFREY P</rptOwnerName></reportingOwnerId>
+    <reportingOwnerRelationship><isDirector>true</isDirector><isOfficer>false</isOfficer><isTenPercentOwner>true</isTenPercentOwner></reportingOwnerRelationship>
+  </reportingOwner>
+  <nonDerivativeTable>
+    <nonDerivativeTransaction>
+      <transactionDate><value>2024-02-07</value></transactionDate>
+      <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+      <transactionAmounts><transactionShares><value>500</value></transactionShares><transactionPricePerShare><value>171.03</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode></transactionAmounts>
+    </nonDerivativeTransaction>
+  </nonDerivativeTable>
+</ownershipDocument>
