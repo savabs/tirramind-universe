@@ -13,11 +13,11 @@ import pandas as pd
 
 from . import __version__
 from .accuracy import accuracy_table
-from .diff import annotate, events_over_history, permanent_removals
+from .diff import annotate, events_over_history, fill_exchange, permanent_removals
 from .link import link
 from .page import render_weekly
 from .ledger import DEFAULT_ROOT as LEDGER_ROOT, read as read_ledger
-from .reconcile import CAUSES, reconcile, summary
+from .reconcile import CAUSES, NOT_DELISTINGS, reconcile, summary
 from .store import DEFAULT_ROOT as SNAP_ROOT, load_snapshot, snapshots_for
 
 OUT = os.path.join(os.getcwd(), "data")
@@ -29,7 +29,7 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     if not snaps:
         raise RuntimeError("no ticker snapshots; run tickers.snapshot_current first")
     latest = load_snapshot(snap_root, snaps[-1]["path"])
-    events = annotate(events_over_history("tickers", root=snap_root))
+    events = annotate(fill_exchange(events_over_history("tickers", root=snap_root), root=snap_root))
     filings = read_ledger("filings", root=ledger_root)
     if filings.empty:
         raise RuntimeError("filings ledger is empty; run filings.backfill first")
@@ -69,6 +69,10 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
         "events_by_type": events["event"].value_counts().to_dict(),
         "suspect_steps": sorted(set(events.loc[events.suspect, "to_captured_at"].str[:10])),
         "raw_removals": int(events.event.eq("DELISTED_FROM_MAP").sum()),
+        "superseded": delist.loc[delist.cause.isin(NOT_DELISTINGS), "cause"].value_counts().to_dict(),
+        "true_delistings": int((~delist.cause.isin(NOT_DELISTINGS)).sum()),
+        "cause_by_exchange_2022": pd.crosstab(delist[(delist.to_captured_at >= "2022") & ~delist.cause.isin(NOT_DELISTINGS)].exchange.replace("", "(blank)"),
+                                              delist[(delist.to_captured_at >= "2022") & ~delist.cause.isin(NOT_DELISTINGS)].cause).to_dict(),
         "relisted_share": round(float((events.event.eq("DELISTED_FROM_MAP") & events.relisted_at.ne("")).sum()
                                       / max(1, events.event.eq("DELISTED_FROM_MAP").sum())), 4),
         "delistings": int(len(delist)),
@@ -85,6 +89,14 @@ def _write_readme(out: str, s: dict) -> None:
     ev = "\n".join(f"| {k} | {v} |" for k, v in sorted(s["events_by_type"].items()))
     causes = "\n".join(f"| {k} | {v:.1%} |" for k, v in s["cause_shares"].items())
     forms = "\n".join(f"| {k} | {v} |" for k, v in sorted(s["filings_by_form"].items()))
+    bx = pd.DataFrame(s["cause_by_exchange_2022"]).fillna(0).astype(int)
+    if len(bx):
+        bx["total"] = bx.sum(axis=1)
+        bx["known"] = (1 - bx.get("UNKNOWN", 0) / bx["total"]).map(lambda v: f"{v:.0%}")
+        by_ex = "| exchange | " + " | ".join(bx.columns) + " |\n|---|" + "---|" * len(bx.columns) + "\n" + \
+            "\n".join(f"| {i} | " + " | ".join(str(v) for v in r) + " |" for i, r in bx.iterrows())
+    else:
+        by_ex = "(no rows)"
     ins = s.get("insider") or {}
     insider = "" if not ins else f"""
 ## Form 144 → Form 4 ledger
@@ -126,8 +138,12 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 them re-appear later** (`relisted_at`) — the SEC file churns for housekeeping
 reasons. Steps that removed ≥1,500 tickers at once are partial or
 format-shifted captures and are flagged `suspect`: {', '.join(s['suspect_steps']) or 'none'}.
-Only removals that are neither re-listed nor suspect are treated as
-delistings below. The raw rows stay in `events.parquet`; nothing is deleted.
+Of the removals that are neither re-listed nor suspect ({s['delistings']}),
+those whose CIK gained a *different* ticker within ±60 days **and** have no
+stronger filing evidence are two-step symbol changes or exchange transfers,
+not delistings ({', '.join(f'{k} {v}' for k, v in s['superseded'].items()) or 'none'}).
+They stay in `delistings.parquet` with that cause; the shares below are
+over the remaining {s['true_delistings']} true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -138,6 +154,14 @@ delisting; that share is inside `UNKNOWN`.
 | cause | share |
 |---|---|
 {causes}
+
+### By exchange, removals since 2022
+{by_ex}
+
+Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
+going-private of an ADR shows as `EXCHANGE_DELISTING` (Form 25 only) or
+`UNKNOWN`. Dormant OTC registrants that simply stop filing are `UNKNOWN`
+until a last-filing-date check is added.
 
 ## Filings collected
 | form | count |

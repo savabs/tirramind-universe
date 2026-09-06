@@ -13,10 +13,12 @@ from __future__ import annotations
 import pandas as pd
 
 CAUSES = ["BANKRUPTCY", "EXCHANGE_DELISTING", "MERGER_ACQUISITION",
-          "VOLUNTARY_DELISTING", "DEREGISTRATION", "UNKNOWN"]
+          "VOLUNTARY_DELISTING", "DEREGISTRATION", "EXCHANGE_TRANSFER", "SYMBOL_CHANGED", "UNKNOWN"]
+NOT_DELISTINGS = {"EXCHANGE_TRANSFER", "SYMBOL_CHANGED"}   # the security lives on
+WEAK = {"UNKNOWN", "VOLUNTARY_DELISTING"}                 # the only causes a sibling may override
 FORM15 = {"15-12G", "15-12B", "15-15D"}
 COLUMNS = ["cik", "ticker", "name", "exchange", "from_captured_at", "to_captured_at",
-           "cause", "evidence_forms", "evidence_accessions", "n_filings_in_window"]
+           "cause", "evidence_forms", "evidence_accessions", "n_filings_in_window", "superseded_by"]
 
 
 def _items(s: str) -> set[str]:
@@ -39,8 +41,11 @@ def classify(window: pd.DataFrame) -> tuple[str, pd.DataFrame]:
 
     if bankrupt.any():
         return "BANKRUPTCY", window[bankrupt | f25_exchange | f25_issuer | f15]
-    if acquired.any() and (f25_issuer.any() or f25_exchange.any() or f15.any()):
-        return "MERGER_ACQUISITION", window[acquired | f25_issuer | f25_exchange | f15]
+    # Item 2.01 also fires for the *acquirer*; only call it a merger when the
+    # registrant also stopped being listed/registered (Form 15, exchange-filed
+    # Form 25, or a 3.01 notice). An issuer-filed Form 25 alone is voluntary.
+    if acquired.any() and (f15.any() or f25_exchange.any() or notice.any()):
+        return "MERGER_ACQUISITION", window[acquired | f25_issuer | f25_exchange | f15 | notice]
     if notice.any() or f25_exchange.any():
         return "EXCHANGE_DELISTING", window[notice | f25_exchange | f15]
     if f25_issuer.any():
@@ -60,7 +65,11 @@ def reconcile(events: pd.DataFrame, filings: pd.DataFrame, *,
     ev["to_ts"] = pd.to_datetime(ev["to_captured_at"], utc=True).dt.tz_localize(None).dt.normalize()
     f = filings.copy()
     f["filed_ts"] = pd.to_datetime(f["filed_at"])
-    by_cik = {k: g for k, g in f.groupby("subject_cik")}
+    # Co-registrants (an LP and its parent REIT) file one 8-K under several
+    # CIKs; match on every CIK the filing names, not only the first.
+    fx = f.assign(match_cik=f["all_ciks"].fillna("").str.split(",")).explode("match_cik")
+    fx = fx[fx.match_cik.ne("")]
+    by_cik = {k: g for k, g in fx.groupby("match_cik")}
 
     out = []
     for r in ev.itertuples(index=False):
@@ -71,6 +80,19 @@ def reconcile(events: pd.DataFrame, filings: pd.DataFrame, *,
             lo, hi = r.to_ts - pd.Timedelta(days=days_before), r.to_ts + pd.Timedelta(days=days_after)
             w = g[(g["filed_ts"] >= lo) & (g["filed_ts"] <= hi)]
         cause, evidence = classify(w)
+        # A sibling ticker on the same CIK within +/-60 days overrides only a
+        # weak cause: a bankruptcy whose stock moves to OTC as XXXQ, or a
+        # de-SPAC whose units become common, keep their filing-based cause.
+        kind = getattr(r, "superseded_kind", "") or ""
+        if cause in WEAK and kind:
+            cause = kind
+        # A listing that reappears on another exchange with only an
+        # issuer-filed Form 25 behind it is a transfer even if the 8-K also
+        # ticked 3.01 (which covers transfers) or 2.01 (as acquirer).
+        elif kind == "EXCHANGE_TRANSFER" and cause in ("MERGER_ACQUISITION", "EXCHANGE_DELISTING") \
+                and not w["form"].isin(FORM15).any() \
+                and not (w["form"].eq("25-NSE") & (w["submitter_cik"] != w["subject_cik"])).any():
+            cause = "EXCHANGE_TRANSFER"
         out.append({
             "cik": r.cik, "ticker": r.ticker, "name": r.name, "exchange": r.exchange,
             "from_captured_at": r.from_captured_at, "to_captured_at": r.to_captured_at,
@@ -78,10 +100,13 @@ def reconcile(events: pd.DataFrame, filings: pd.DataFrame, *,
             "evidence_forms": ",".join(sorted(set(evidence["form"]))) if len(evidence) else "",
             "evidence_accessions": ",".join(sorted(evidence["accession"])) if len(evidence) else "",
             "n_filings_in_window": int(len(w)),
+            "superseded_by": getattr(r, "superseded_by", "") or "",
         })
     return pd.DataFrame(out, columns=COLUMNS)
 
 
 def summary(rec: pd.DataFrame) -> pd.Series:
-    """Cause shares — the UNKNOWN rate is printed and published, never hidden."""
-    return rec["cause"].value_counts(normalize=True).reindex(CAUSES).fillna(0.0)
+    """Cause shares among true delistings (transfers and symbol changes are
+    counted separately) — the UNKNOWN rate is published, never hidden."""
+    d = rec[~rec["cause"].isin(NOT_DELISTINGS)]
+    return d["cause"].value_counts(normalize=True).reindex(CAUSES).fillna(0.0)

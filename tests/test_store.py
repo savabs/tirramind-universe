@@ -14,7 +14,7 @@ def test_same_content_twice_writes_once(tmp_path):
     a = _df([("1", "AAA"), ("2", "BBB")])
     p1, d1, s1 = snapshot("t", a, root=root)
     p2, d2, s2 = snapshot("t", a, root=root)
-    assert s1 == "new" and p1 and p1.endswith(f"_{d1}.csv")
+    assert s1 == "new" and p1 and p1.endswith(f"_{d1}.csv.gz")
     assert s2 == "unchanged" and p2 is None and d2 == d1
     idx = read_index(root)
     assert [r["status"] for r in idx] == ["new", "unchanged"]

@@ -99,7 +99,7 @@ def annotate(events: pd.DataFrame) -> pd.DataFrame:
     """
     ev = events.copy()
     if ev.empty:
-        for c in ("suspect", "relisted_at", "cosmetic"):
+        for c in ("suspect", "relisted_at", "cosmetic", "superseded_by", "superseded_kind"):
             ev[c] = pd.Series(dtype=object)
         return ev
     removals = ev[ev.event.eq("DELISTED_FROM_MAP")].groupby("to_captured_at").size()
@@ -114,6 +114,26 @@ def annotate(events: pd.DataFrame) -> pd.DataFrame:
     ev["relisted_at"] = ""
     ev.loc[first.index, "relisted_at"] = first.values
 
+    # Sibling: the same CIK gained a *different* ticker within +/-60 days of
+    # losing this one. That is a symbol change the SEC file applied in two
+    # steps (DIGP -> FUNI), or a move between exchanges (CSWI Nasdaq -> CSW NYSE).
+    # Either way it is not a delisting.
+    dd = ev[ev.event.eq("DELISTED_FROM_MAP")][["cik", "ticker", "exchange", "to_captured_at"]].reset_index()
+    ll = ev[ev.event.isin(["LISTED", "SYMBOL_CHANGED"])][["cik", "ticker", "exchange", "to_captured_at"]]
+    ll = ll.rename(columns={"ticker": "sib_ticker", "exchange": "sib_exchange", "to_captured_at": "sib_at"})
+    j = dd.merge(ll, on="cik")
+    j = j[j.sib_ticker != j.ticker]
+    dt = (pd.to_datetime(j.sib_at, utc=True) - pd.to_datetime(j.to_captured_at, utc=True)).dt.days
+    j = j[(dt >= -60) & (dt <= 60)].sort_values("sib_at").drop_duplicates("index")
+    ev["superseded_by"] = ""
+    ev["superseded_kind"] = ""
+    if len(j):
+        ev.loc[j["index"], "superseded_by"] = j.sib_ticker.values
+        kind = pd.Series("SYMBOL_CHANGED", index=j.index)
+        moved = j.sib_exchange.ne("") & j.exchange.ne("") & (j.sib_exchange != j.exchange)
+        kind[moved] = "EXCHANGE_TRANSFER"
+        ev.loc[j["index"], "superseded_kind"] = kind.values
+
     def _norm(s):
         return s.str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
     nc = ev.event.eq("NAME_CHANGED")
@@ -123,6 +143,41 @@ def annotate(events: pd.DataFrame) -> pd.DataFrame:
 
 
 def permanent_removals(annotated: pd.DataFrame) -> pd.DataFrame:
-    """DELISTED_FROM_MAP events that are neither suspect nor re-listed."""
+    """DELISTED_FROM_MAP events that are neither suspect nor re-listed.
+    Sibling supersession is *information* passed to the reconciler, where
+    filing evidence takes precedence over it."""
     a = annotated
     return a[a.event.eq("DELISTED_FROM_MAP") & ~a.suspect & a.relisted_at.eq("")].reset_index(drop=True)
+
+
+def fill_exchange(events: pd.DataFrame, *, root: str = DEFAULT_ROOT) -> pd.DataFrame:
+    """For rows with a blank exchange (pre-day-0 history), take the exchange
+    from the latest ``exchange`` snapshot captured at or before the event.
+    Rows earlier than the first exchange capture stay blank; the column
+    ``exchange_source`` says which."""
+    ev = events.copy()
+    ev["exchange_source"] = "same_snapshot"
+    ev.loc[ev.exchange.eq(""), "exchange_source"] = "unknown"
+    snaps = snapshots_for("exchange", root=root)
+    if not snaps or ev.empty:
+        return ev
+    frames = []
+    for r in snaps:
+        df = load_snapshot(root, r["path"])
+        df["at"] = r["captured_at"]
+        frames.append(df)
+    hist = pd.concat(frames, ignore_index=True)
+    hist = hist[hist.exchange.ne("")]
+    hist["at_ts"] = pd.to_datetime(hist["at"], utc=True)
+    blank = ev.exchange.eq("")
+    sub = ev[blank].copy()
+    sub["ev_ts"] = pd.to_datetime(sub["from_captured_at"], utc=True)
+    sub = sub.sort_values("ev_ts")
+    hist = hist.sort_values("at_ts")
+    got = pd.merge_asof(sub, hist[["cik", "ticker", "exchange", "at_ts"]].rename(columns={"exchange": "ex_hist"}),
+                        left_on="ev_ts", right_on="at_ts", by=["cik", "ticker"], direction="backward")
+    got = got.set_index(sub.index)
+    hit = got["ex_hist"].notna()
+    ev.loc[got.index[hit], "exchange"] = got.loc[hit, "ex_hist"].values
+    ev.loc[got.index[hit], "exchange_source"] = "wayback_exchange_file"
+    return ev

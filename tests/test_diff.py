@@ -69,3 +69,20 @@ def test_annotate_flags_flaps_suspect_steps_and_cosmetic_renames():
     assert a[a.to_captured_at.eq("t3")].suspect.all() and not a.loc[2, "suspect"]
     perm = permanent_removals(a)
     assert list(perm.cik) == ["2"]
+
+
+def test_sibling_ticker_marks_symbol_change_or_transfer():
+    from tirramind.diff import annotate, permanent_removals
+    cols = ["event", "cik", "ticker", "name", "exchange", "prev_ticker", "prev_name", "prev_exchange",
+            "from_captured_at", "to_captured_at", "from_digest", "to_digest"]
+    ev = pd.DataFrame([
+        ["LISTED",            "7", "FUNI", "", "OTC",    "", "", "", "2024-09-10T00:00:00+00:00", "2024-09-18T00:00:00+00:00", "", ""],
+        ["DELISTED_FROM_MAP", "7", "DIGP", "", "OTC",    "DIGP", "", "", "2024-09-18T00:00:00+00:00", "2024-09-27T00:00:00+00:00", "", ""],
+        ["LISTED",            "8", "CSW",  "", "NYSE",   "", "", "", "2025-06-01T00:00:00+00:00", "2025-06-21T00:00:00+00:00", "", ""],
+        ["DELISTED_FROM_MAP", "8", "CSWI", "", "Nasdaq", "CSWI", "", "", "2025-06-21T00:00:00+00:00", "2025-07-04T00:00:00+00:00", "", ""],
+        ["DELISTED_FROM_MAP", "9", "GONE", "", "NYSE",   "GONE", "", "", "2025-06-21T00:00:00+00:00", "2025-07-04T00:00:00+00:00", "", ""],
+    ], columns=cols)
+    a = annotate(ev).set_index("ticker")
+    assert a.loc["DIGP", "superseded_by"] == "FUNI" and a.loc["DIGP", "superseded_kind"] == "SYMBOL_CHANGED"
+    assert a.loc["CSWI", "superseded_by"] == "CSW" and a.loc["CSWI", "superseded_kind"] == "EXCHANGE_TRANSFER"
+    assert sorted(permanent_removals(annotate(ev)).ticker) == ["CSWI", "DIGP", "GONE"]  # filings decide, not the sibling

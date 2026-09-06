@@ -80,11 +80,11 @@ def snapshot(
         _record(root, {**base, "status": "unchanged", "path": None})
         return None, dg, "unchanged"
 
-    rel = os.path.join(name, f"{day}_{dg}.csv")
+    rel = os.path.join(name, f"{day}_{dg}.csv.gz")
     path = os.path.join(root, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     canonical = df.reindex(sorted(df.columns), axis=1)
-    canonical.to_csv(path, index=False)
+    canonical.to_csv(path, index=False, compression="gzip")
     _record(root, {**base, "status": "new", "path": rel})
     return path, dg, "new"
 

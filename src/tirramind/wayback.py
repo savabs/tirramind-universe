@@ -61,3 +61,35 @@ def backfill(*, root: str = DEFAULT_ROOT, session: requests.Session | None = Non
         print(f"{ts}  {len(df):>6} rows  {status} ({dg})")
         written.append((ts, status, len(df)))
     return written
+
+
+# -- exchange file ------------------------------------------------------------
+from .tickers import EXCHANGE_URL  # noqa: E402
+
+
+def backfill_exchange(*, root: str = DEFAULT_ROOT, session: requests.Session | None = None) -> int:
+    """Wayback captures of company_tickers_exchange.json (2021-07 ->) stored as
+    ``exchange`` snapshots so historical events can be labelled with the
+    exchange they were on at the time."""
+    import pandas as pd
+    s = session or requests.Session()
+    s.headers.setdefault("User-Agent", "tirramind-backfill (github.com/savabs/tirramind-universe)")
+    n = 0
+    for ts in list_captures(EXCHANGE_URL, session=s):
+        try:
+            data = fetch_capture(ts, EXCHANGE_URL, session=s)
+            df = pd.DataFrame(data["data"], columns=data["fields"])
+        except Exception as e:  # noqa: BLE001
+            print(f"{ts}  FAIL  {type(e).__name__}: {str(e)[:80]}")
+            continue
+        df["cik"] = df["cik"].map(lambda c: f"{int(c):010d}")
+        df["ticker"] = df["ticker"].astype(str).str.strip().str.upper()
+        df["exchange"] = df["exchange"].fillna("").astype(str)
+        df = df[["cik", "ticker", "exchange"]].drop_duplicates(["cik", "ticker"]).sort_values(["cik", "ticker"])
+        if len(df) < 3000:
+            print(f"{ts}  SKIP  {len(df)} rows"); continue
+        when = datetime.strptime(ts, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        _, dg, status = snapshot("exchange", df, root=root, captured_at=when, source="wayback")
+        print(f"{ts}  {len(df):>6} rows  {status} ({dg})")
+        n += status == "new"
+    return n
