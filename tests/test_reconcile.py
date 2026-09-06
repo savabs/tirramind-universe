@@ -28,13 +28,17 @@ FILINGS = pd.DataFrame([
     _f("a9", "25", "", "0000000008", "0000000008", "2024-03-12"),                # issuer-filed 25 (transfer)
     _f("c1", "8-K", "2.01,3.01,9.01", "0000000012", "0000000012", "2024-03-10"), # CSWI pattern: acquirer + 3.01 transfer notice
     _f("c2", "25", "", "0000000012", "0000000012", "2024-03-12"),
+    _f("d1", "8-K", "1.01,1.03,2.01,3.01,5.01,5.03,9.01", "0000000013", "0000000013", "2024-03-10"),  # Vista pattern
+    _f("d2", "25-NSE", "", "0000000099", "0000000013", "2024-03-10"),
+    _f("d3", "15-12G", "", "0000000013", "0000000013", "2024-03-20"),
     _f("b1", "8-K", "1.03", "0000000090", "0000000090", "2024-03-10", "0000000009"),  # parent files, LP is co-registrant
 ], columns=F_COLS)
 EVENTS = pd.DataFrame([_ev(f"{i:010d}", f"T{i}") for i in range(1, 10)]
                       + [_ev("0000000001", "T1Q", sib="T1Q", kind="SYMBOL_CHANGED"),      # bankrupt + sibling: filing wins
                          _ev("0000000008", "T8X", sib="T8", kind="EXCHANGE_TRANSFER"),   # voluntary + sibling: transfer
                          _ev("0000000011", "T11", sib="T11N", kind="SYMBOL_CHANGED"),    # unknown + sibling: symbol change
-                         _ev("0000000012", "T12", sib="T12N", kind="EXCHANGE_TRANSFER")], # merger-looking 8-K but moved exchange
+                         _ev("0000000012", "T12", sib="T12N", kind="EXCHANGE_TRANSFER"), # merger-looking 8-K but moved exchange
+                         _ev("0000000013", "T13")],                                        # mis-ticked 1.03 on a going-private
                       columns=EV_COLS)
 
 
@@ -56,15 +60,16 @@ def test_causes_and_evidence():
     assert r[r.ticker.eq("T1Q")].cause.iloc[0] == "BANKRUPTCY"
     assert r[r.ticker.eq("T8X")].cause.iloc[0] == "EXCHANGE_TRANSFER"
     assert r[r.ticker.eq("T12")].cause.iloc[0] == "EXCHANGE_TRANSFER"
+    assert r[r.ticker.eq("T13")].cause.iloc[0] == "MERGER_ACQUISITION"
 
 
 def test_unknown_is_reported_in_summary():
     s = summary(reconcile(EVENTS, FILINGS))
     assert list(s.index) == CAUSES
-    assert abs(s["UNKNOWN"] - 2 / 10) < 1e-9   # 13 rows minus 3 non-delistings
+    assert abs(s["UNKNOWN"] - 2 / 11) < 1e-9   # 14 rows minus 3 non-delistings
 
 
 def test_non_delist_events_ignored():
     ev = EVENTS.copy()
     ev.loc[0, "event"] = "LISTED"
-    assert len(reconcile(ev, FILINGS)) == 12
+    assert len(reconcile(ev, FILINGS)) == 13

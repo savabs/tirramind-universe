@@ -32,7 +32,11 @@ def classify(window: pd.DataFrame) -> tuple[str, pd.DataFrame]:
         return "UNKNOWN", window
     is_8k = window["form"].eq("8-K")
     items = window["items"].map(_items)
-    bankrupt = is_8k & items.map(lambda s: "1.03" in s)
+    # Item 1.03 on the *same* 8-K as 2.01 (acquisition completed) and 5.01
+    # (change in control) is a going-private filing with a mis-ticked item,
+    # not a bankruptcy (Vista Outdoor, 2024-11-27). Real bankruptcies pair
+    # 1.03 with 2.04/7.01, never with a completed change of control.
+    bankrupt = is_8k & items.map(lambda s: "1.03" in s and not ("2.01" in s and "5.01" in s))
     notice = is_8k & items.map(lambda s: "3.01" in s)
     acquired = is_8k & items.map(lambda s: "2.01" in s)
     f25_exchange = window["form"].eq("25-NSE") & (window["submitter_cik"] != window["subject_cik"])
