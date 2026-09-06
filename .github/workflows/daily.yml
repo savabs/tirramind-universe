@@ -1,0 +1,57 @@
+# Daily ledger of the US listed universe, reconciled from SEC filings.
+#
+# company_tickers.json is overwritten in place by the SEC. Wayback catches it
+# roughly monthly; this catches it daily. A missed day is a day of diff
+# resolution nobody can recover afterwards.
+name: daily
+
+on:
+  schedule:
+    - cron: "40 22 * * 1-5"   # 22:40 UTC, after the EDGAR day closes (17:30 ET)
+  workflow_dispatch:
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+
+      - name: Collect and build
+        env:
+          TIRRAMIND_CONTACT: ${{ secrets.TIRRAMIND_CONTACT }}
+        run: python -m tirramind.daily
+
+      - name: Verify
+        # THE gate. Zero rows on a business day is a failure even when every
+        # step above exited 0.
+        run: python -m tirramind.verify
+
+      - name: Commit
+        run: |
+          set -eu
+          if [ -z "$(git status --porcelain data)" ]; then
+            echo "nothing new — identical bytes"; exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -q -m "ledger: $(date -u +%Y-%m-%d) [ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && \
+            git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "push race, retry $i"; sleep 5
+          done
+          echo "FAILED to push after 3 attempts"; exit 1
