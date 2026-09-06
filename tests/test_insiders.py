@@ -32,7 +32,11 @@ def test_form4_from_dataset_joins_three_tables():
     assert (df.source == "dataset:2025q1").all()
 
 
-def test_split_144_ciks():
-    hit = {"_source": {"adsh": "0001214128-24-000003", "ciks": ["0000320193", "0001214128"]}}
-    assert _split_144_ciks(hit) == ("0000320193", "0001214128")
-    assert _split_144_ciks({"_source": {"adsh": "0009-24-1", "ciks": ["0000320193"]}}) == ("0000320193", "")
+def test_split_144_ciks_uses_ticker_not_position():
+    agent_filed = {"_source": {"adsh": "0002007317-25-000485", "ciks": ["0001232524", "0001193210"],
+                   "display_names": ["Jazz Pharmaceuticals plc  (JAZZ)  (CIK 0001232524)", "COZADD BRUCE C  (CIK 0001193210)"]}}
+    assert _split_144_ciks(agent_filed) == ("0001232524", "0001193210")
+    reversed_order = {"_source": {"adsh": "0009-24-1", "ciks": ["0001193210", "0001232524"],
+                      "display_names": ["COZADD BRUCE C  (CIK 0001193210)", "Jazz Pharmaceuticals plc  (JAZZ)  (CIK 0001232524)"]}}
+    assert _split_144_ciks(reversed_order) == ("0001232524", "0001193210")
+    assert _split_144_ciks({"_source": {"adsh": "0009-24-1", "ciks": ["0000320193"], "display_names": ["Apple Inc.  (AAPL)  (CIK 0000320193)"]}}) == ("0000320193", "")

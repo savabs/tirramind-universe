@@ -13,6 +13,7 @@ notice is one EFTS hit plus one XML fetch. That gap is the product.
 from __future__ import annotations
 
 import io
+import re
 import zipfile
 from datetime import date, datetime
 
@@ -118,18 +119,23 @@ def collect_form4_recent(client: SecClient, start: date, end: date, *, root: str
 
 
 # -- Form 144 ---------------------------------------------------------------
+_TICKER_RE = re.compile(r"\(([A-Z][A-Z0-9.,\- ]{0,40})\)\s+\(CIK")
+
+
 def _split_144_ciks(hit: dict) -> tuple[str, str]:
-    """A Form 144 hit lists the filer (the person) and the issuer. The
-    submitter prefix of the accession is usually the filer; the issuer is
-    the other CIK. When only one CIK is present it is the issuer."""
+    """(issuer_cik, owner_cik). A Form 144 hit lists the issuer and the person;
+    the accession prefix is usually a filing agent, so position and prefix
+    are both unreliable. The issuer is the CIK whose display name carries a
+    ticker in parentheses; failing that, the first CIK."""
     s = hit["_source"]
     ciks = [f"{int(c):010d}" for c in s.get("ciks", [])]
+    names = s.get("display_names", [])
     if len(ciks) == 1:
         return ciks[0], ""
-    sub = f"{int(s['adsh'].split('-')[0]):010d}"
-    others = [c for c in ciks if c != sub]
-    if sub in ciks and others:
-        return others[0], sub
+    for c, n in zip(ciks, names):
+        if _TICKER_RE.search(n):
+            others = [x for x in ciks if x != c]
+            return c, others[0] if others else ""
     return ciks[0], ciks[1]
 
 
