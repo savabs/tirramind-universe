@@ -50,9 +50,13 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
         # coverage = last *filing* date in the bulk datasets (transaction dates
         # carry filer typos such as 2033); EFTS rows beyond it are sparse until
         # the gap fill completes and must not count as "no sale"
-        ds = f4[f4["source"].str.startswith("dataset")] if "source" in f4 else f4
-        cov_ts = pd.to_datetime(ds["filing_date"], format="%Y-%m-%d", errors="coerce").max()
-        cov = cov_ts.strftime("%Y-%m-%d") if pd.notna(cov_ts) else None
+        # coverage = last filing date with dense Form 4 data. Bulk datasets are
+        # dense by construction; EFTS rows are dense once the gap fill has run
+        # through to that date (a gap shows up as a week with < 500 filings).
+        fd = pd.to_datetime(f4["filing_date"], format="%Y-%m-%d", errors="coerce")
+        weekly = f4.assign(w=fd.dt.to_period("W")).groupby("w")["accession"].nunique()
+        dense = weekly[weekly >= 500]
+        cov = dense.index.max().end_time.strftime("%Y-%m-%d") if len(dense) else None
         links = link(f144, f4, coverage_end=cov)
         acc = accuracy_table(links)
         links.to_parquet(os.path.join(out, "form144_links.parquet"), index=False)
