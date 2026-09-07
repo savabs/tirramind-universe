@@ -47,7 +47,9 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     insider = {}
     if not f144.empty and not f4.empty:
         # dense coverage = bulk-dataset rows; EFTS rows after that are sparse until the fill completes
-        cov = f4[f4["source"].str.startswith("dataset")]["transaction_date"].max() if "source" in f4 else None
+        ds = f4[f4["source"].str.startswith("dataset")] if "source" in f4 else f4
+        cov_ts = pd.to_datetime(ds["transaction_date"], format="%Y-%m-%d", errors="coerce").max()
+        cov = cov_ts.strftime("%Y-%m-%d") if pd.notna(cov_ts) else None
         links = link(f144, f4, coverage_end=cov)
         acc = accuracy_table(links)
         links.to_parquet(os.path.join(out, "form144_links.parquet"), index=False)
