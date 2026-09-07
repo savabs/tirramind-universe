@@ -9,6 +9,8 @@ CIK) rather than a delist+list pair.
 
 from __future__ import annotations
 
+import re
+
 import pandas as pd
 
 from .store import DEFAULT_ROOT, load_snapshot, snapshots_for
@@ -86,6 +88,32 @@ def events_over_history(name: str = "tickers", *, root: str = DEFAULT_ROOT) -> p
 
 # -- honesty layer ------------------------------------------------------------
 SUSPECT_REMOVALS = 1500   # a step that drops this many tickers is a capture artefact, not the market
+SUCCESSION_DAYS = 120     # holdco successions land within days; measured median gap is -1
+# Words that name a corporate form rather than a business. Dropped before
+# comparing two names, since "Corp" is shared by half the file.
+_FORM_WORDS = {"corp", "corporation", "inc", "incorporated", "co", "company",
+               "holdings", "holding", "group", "plc", "ltd", "limited", "the",
+               "lp", "llc", "international", "new", "na", "sa", "trust", "fund",
+               "technologies", "technology", "industries", "enterprises", "com",
+               "class", "common", "stock"}
+
+
+def _name_overlap(a: str, b: str) -> float:
+    """Share of the smaller name's distinctive words that both names carry.
+
+    Corporate-form words carry no identity -- "Corp" matches everything --
+    so they are dropped before comparing. "Xerox Corporation" vs "Xerox
+    Holdings Corp" scores 1.0; "American Greetings Corp" vs "Antero
+    Midstream Corp" scores 0.
+    """
+    def toks(s: str) -> set[str]:
+        words = re.sub(r"[^a-z0-9 ]", " ", str(s).lower()).split()
+        return {w for w in words if w and w not in _FORM_WORDS}
+
+    x, y = toks(a), toks(b)
+    if not x or not y:
+        return 0.0
+    return len(x & y) / min(len(x), len(y))
 
 
 def annotate(events: pd.DataFrame) -> pd.DataFrame:
@@ -99,7 +127,7 @@ def annotate(events: pd.DataFrame) -> pd.DataFrame:
     """
     ev = events.copy()
     if ev.empty:
-        for c in ("suspect", "relisted_at", "cosmetic", "superseded_by", "superseded_kind"):
+        for c in ("suspect", "relisted_at", "cosmetic", "superseded_by", "superseded_kind", "succeeded_by"):
             ev[c] = pd.Series(dtype=object)
         return ev
     removals = ev[ev.event.eq("DELISTED_FROM_MAP")].groupby("to_captured_at").size()
@@ -127,12 +155,43 @@ def annotate(events: pd.DataFrame) -> pd.DataFrame:
     j = j[(dt >= -60) & (dt <= 60)].sort_values("sib_at").drop_duplicates("index")
     ev["superseded_by"] = ""
     ev["superseded_kind"] = ""
+    ev["succeeded_by"] = ""
     if len(j):
         ev.loc[j["index"], "superseded_by"] = j.sib_ticker.values
         kind = pd.Series("SYMBOL_CHANGED", index=j.index)
         moved = j.sib_exchange.ne("") & j.exchange.ne("") & (j.sib_exchange != j.exchange)
         kind[moved] = "EXCHANGE_TRANSFER"
         ev.loc[j["index"], "superseded_kind"] = kind.values
+
+    # Succession: the mirror of the sibling case above. There, one CIK swapped
+    # ticker; here one ticker swapped CIK. A holding company is interposed
+    # (Xerox Corporation -> Xerox Holdings Corp) or the issuer redomiciles
+    # (Marvell Technology Group Ltd, Bermuda -> Marvell Technology, Inc.,
+    # Delaware). The old registrant files a real Form 25 and Form 15, so the
+    # filings say MERGER_ACQUISITION -- but nobody was bought out and the
+    # security never stopped trading. Both registrants sit in the file at
+    # once, so the successor's median first appearance is the step *before*
+    # the predecessor leaves.
+    sd = ev[ev.event.eq("DELISTED_FROM_MAP")][["cik", "ticker", "name", "to_captured_at"]].reset_index()
+    sl = ev[ev.event.isin(["LISTED", "SYMBOL_CHANGED"])][["cik", "ticker", "name", "to_captured_at"]]
+    sl = sl.rename(columns={"cik": "succ_cik", "name": "succ_name", "to_captured_at": "succ_at"})
+    k = sd.merge(sl, on="ticker")
+    k = k[k.succ_cik != k.cik]
+    kdt = (pd.to_datetime(k.succ_at, utc=True) - pd.to_datetime(k.to_captured_at, utc=True)).dt.days
+    k = k[(kdt >= -SUCCESSION_DAYS) & (kdt <= SUCCESSION_DAYS)]
+    # Same ticker at the same moment is not enough -- a dead company's symbol
+    # gets recycled (American Greetings -> Antero Midstream, years later, and
+    # that one IS a delisting). Require the business name to carry over.
+    # An indexed mask, not a bare list: pandas reads ``df[[]]`` as selecting
+    # zero *columns*, so an empty match would drop every column instead.
+    keeps = pd.Series([_name_overlap(a, b) >= 0.5 for a, b in zip(k["name"], k.succ_name)],
+                      index=k.index, dtype=bool)
+    k = k[keeps]
+    k = k.sort_values("succ_at").drop_duplicates("index")
+    ev["succeeded_by"] = ""
+    if len(k):
+        ev.loc[k["index"], "succeeded_by"] = k.succ_cik.values
+        ev.loc[k["index"], "superseded_kind"] = "SUCCESSION"
 
     def _norm(s):
         return s.str.lower().str.replace(r"[^a-z0-9]", "", regex=True)

@@ -27,7 +27,7 @@ This is the part the vendors do not tell you. `company_tickers.json` is
 overwritten in place and churns for reasons that have nothing to do with
 the market:
 
-- **Half of all "removals" come back.** 43,693 tickers left the file
+- **Half of all "removals" come back.** 43,706 tickers left the file
   between 2017 and today; 50% re-appeared later. Each removal carries
   `relisted_at` so you can see it.
 - **Two captures were partial files.** 2020-06-05 and 2021-08-09 each
@@ -37,11 +37,24 @@ the market:
   name was re-cased. 4,220 of 8,963 "name changes" are cosmetic and flagged.
 - **A ticker that leaves and a new one that arrives on the same CIK within
   60 days is a symbol change or an exchange transfer, not a delisting.**
-  1,413 and 234 of them respectively. CSW Industrials did not get acquired
+  1,411 and 235 of them respectively. CSW Industrials did not get acquired
   in June 2025; it moved from Nasdaq to NYSE as CSW, and its 8-K carried
   Item 2.01 because *it* had acquired something.
+- **And the mirror of that: a ticker that stays while the CIK beneath it
+  changes is a new registrant, not a delisting.** 190 of them. A holding
+  company gets interposed (Xerox Corporation → Xerox Holdings Corp) or the
+  issuer redomiciles (Marvell Technology Group Ltd, Bermuda → Marvell
+  Technology, Inc., Delaware). The old registrant files a real Form 25 and
+  Form 15, so the filings read `MERGER_ACQUISITION` — 55 of these carried
+  exactly that label — but nobody was bought out and the security never
+  stopped trading. Walt Disney is in this bucket, from the 2019 Fox
+  reorganisation. Both registrants sit in the file at once, so the
+  successor's median first appearance is the step *before* the predecessor
+  leaves. The business name has to carry over, or ticker recycling would be
+  swallowed too: American Greetings really did die, and Antero Midstream
+  picked up `AM` years later.
 
-After all of that, **12,637 true delistings** remain, 9,415 of them since
+After all of that, **12,452 true delistings** remain, 9,342 of them since
 2022.
 
 ## Why each one happened
@@ -52,9 +65,9 @@ co-registrants, because an LP's 8-K is filed under its parent — within
 
 | exchange (2022→) | bankruptcy | exchange-initiated | merger / going private | voluntary | deregistration | unknown | **known** |
 |---|---|---|---|---|---|---|---|
-| NYSE | 34 | 1,040 | 546 | 12 | 4 | 110 | **94%** |
-| Nasdaq | 103 | 1,401 | 1,193 | 38 | 17 | 207 | **93%** |
-| OTC | 154 | 253 | 108 | 16 | 159 | 2,638 | 21% |
+| NYSE | 33 | 1,028 | 532 | 12 | 4 | 109 | **94%** |
+| Nasdaq | 103 | 1,394 | 1,174 | 38 | 8 | 207 | **93%** |
+| OTC | 152 | 252 | 105 | 16 | 158 | 2,636 | 21% |
 
 On the two national exchanges, 93–94% of delistings have a filing-backed
 cause. On OTC the figure is 21%, and that is honest: most OTC names leave

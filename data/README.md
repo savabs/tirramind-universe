@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-07T22:43:02+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-07T23:50:01+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -31,9 +31,9 @@ format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
 Of the removals that are neither re-listed nor suspect (14288),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
-not delistings (SYMBOL_CHANGED 1415, EXCHANGE_TRANSFER 235).
+not delistings (SYMBOL_CHANGED 1411, EXCHANGE_TRANSFER 235, SUCCESSION 190).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12638 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12452 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -43,24 +43,25 @@ delisting; that share is inside `UNKNOWN`.
 
 | cause | share |
 |---|---|
-| BANKRUPTCY | 3.3% |
-| EXCHANGE_DELISTING | 25.8% |
-| MERGER_ACQUISITION | 20.0% |
+| BANKRUPTCY | 3.4% |
+| EXCHANGE_DELISTING | 25.9% |
+| MERGER_ACQUISITION | 19.9% |
 | VOLUNTARY_DELISTING | 0.6% |
-| DEREGISTRATION | 2.0% |
+| DEREGISTRATION | 1.9% |
 | EXCHANGE_TRANSFER | 0.0% |
 | SYMBOL_CHANGED | 0.0% |
-| UNKNOWN | 48.3% |
+| SUCCESSION | 0.0% |
+| UNKNOWN | 48.4% |
 
 ### By exchange, removals since 2022
 | exchange | BANKRUPTCY | DEREGISTRATION | EXCHANGE_DELISTING | MERGER_ACQUISITION | UNKNOWN | VOLUNTARY_DELISTING | total | known |
 |---|---|---|---|---|---|---|---|---|
-| (blank) | 62 | 26 | 117 | 30 | 1118 | 6 | 1359 | 18% |
+| (blank) | 62 | 25 | 117 | 29 | 1113 | 6 | 1352 | 18% |
 | CBOE | 0 | 0 | 18 | 0 | 10 | 0 | 28 | 64% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 33 | 4 | 1039 | 546 | 111 | 12 | 1745 | 94% |
-| Nasdaq | 103 | 17 | 1400 | 1193 | 208 | 38 | 2959 | 93% |
-| OTC | 152 | 158 | 252 | 110 | 2636 | 16 | 3324 | 21% |
+| NYSE | 33 | 4 | 1028 | 532 | 109 | 12 | 1718 | 94% |
+| Nasdaq | 103 | 8 | 1394 | 1174 | 207 | 38 | 2924 | 93% |
+| OTC | 152 | 158 | 252 | 105 | 2636 | 16 | 3319 | 21% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
 going-private of an ADR shows as `EXCHANGE_DELISTING` (Form 25 only) or
@@ -88,3 +89,15 @@ until a last-filing-date check is added.
 | EX-99.3 | 1 |
 | EX-99.4 | 1 |
 | EX-99.8 | 1 |
+
+## Form 144 → Form 4 ledger
+| | |
+|---|---|
+| Form 144 notices | 37651 |
+| Form 4 transaction rows | 1264197 (sales: 397450) |
+| linked notices | 37651 |
+| match method | cik 90%, none 10%, name 0% |
+| P(sale within 90d), all | 66.0% |
+
+Files: `form144_links.parquet` (one row per notice), `accuracy.parquet`
+(rates with cluster-bootstrap CIs and effective n). Weekly page: `docs/index.html`.

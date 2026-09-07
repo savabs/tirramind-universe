@@ -86,3 +86,33 @@ def test_sibling_ticker_marks_symbol_change_or_transfer():
     assert a.loc["DIGP", "superseded_by"] == "FUNI" and a.loc["DIGP", "superseded_kind"] == "SYMBOL_CHANGED"
     assert a.loc["CSWI", "superseded_by"] == "CSW" and a.loc["CSWI", "superseded_kind"] == "EXCHANGE_TRANSFER"
     assert sorted(permanent_removals(annotate(ev)).ticker) == ["CSWI", "DIGP", "GONE"]  # filings decide, not the sibling
+
+
+def test_successor_cik_marks_succession_but_not_ticker_reuse():
+    """The mirror of the sibling case: one ticker, two registrants.
+
+    Xerox interposed a holding company in 2019 -- the old registrant filed a
+    real Form 25 and Form 15, so a filings-only method reads it as a merger,
+    but the security never stopped trading. American Greetings genuinely died
+    and Antero Midstream picked up the symbol years later; that one is a
+    delisting and must survive the check.
+    """
+    from tirramind.diff import annotate
+    cols = ["event", "cik", "ticker", "name", "exchange", "prev_ticker", "prev_name", "prev_exchange",
+            "from_captured_at", "to_captured_at", "from_digest", "to_digest"]
+    ev = pd.DataFrame([
+        ["LISTED",            "20", "XRX", "Xerox Holdings Corp", "NYSE", "", "", "",
+         "2019-07-20T00:00:00+00:00", "2019-07-31T00:00:00+00:00", "", ""],
+        ["DELISTED_FROM_MAP", "10", "XRX", "Xerox Corporation", "NYSE", "XRX", "", "",
+         "2019-07-31T00:00:00+00:00", "2019-08-01T00:00:00+00:00", "", ""],
+        ["LISTED",            "30", "AM", "Antero Midstream Corp", "NYSE", "", "", "",
+         "2019-03-10T00:00:00+00:00", "2019-03-13T00:00:00+00:00", "", ""],
+        ["DELISTED_FROM_MAP", "11", "AM", "American Greetings Corp", "NYSE", "AM", "", "",
+         "2019-03-13T00:00:00+00:00", "2019-03-14T00:00:00+00:00", "", ""],
+    ], columns=cols)
+    a = annotate(ev)
+    a = a[a.event.eq("DELISTED_FROM_MAP")].set_index("ticker")
+    assert a.loc["XRX", "succeeded_by"] == "20"
+    assert a.loc["XRX", "superseded_kind"] == "SUCCESSION"
+    assert a.loc["AM", "succeeded_by"] == ""          # name carries no overlap
+    assert a.loc["AM", "superseded_kind"] != "SUCCESSION"

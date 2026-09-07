@@ -13,12 +13,18 @@ from __future__ import annotations
 import pandas as pd
 
 CAUSES = ["BANKRUPTCY", "EXCHANGE_DELISTING", "MERGER_ACQUISITION",
-          "VOLUNTARY_DELISTING", "DEREGISTRATION", "EXCHANGE_TRANSFER", "SYMBOL_CHANGED", "UNKNOWN"]
-NOT_DELISTINGS = {"EXCHANGE_TRANSFER", "SYMBOL_CHANGED"}   # the security lives on
+          "VOLUNTARY_DELISTING", "DEREGISTRATION", "EXCHANGE_TRANSFER", "SYMBOL_CHANGED",
+          "SUCCESSION", "UNKNOWN"]
+NOT_DELISTINGS = {"EXCHANGE_TRANSFER", "SYMBOL_CHANGED", "SUCCESSION"}   # the security lives on
 WEAK = {"UNKNOWN", "VOLUNTARY_DELISTING"}                 # the only causes a sibling may override
 FORM15 = {"15-12G", "15-12B", "15-15D"}
 COLUMNS = ["cik", "ticker", "name", "exchange", "from_captured_at", "to_captured_at",
-           "cause", "evidence_forms", "evidence_accessions", "n_filings_in_window", "superseded_by"]
+           "cause", "evidence_forms", "evidence_accessions", "n_filings_in_window",
+           # Two different keys, so two columns. superseded_by holds a *ticker*
+           # (the same issuer's new symbol); succeeded_by holds a *CIK* (the new
+           # registrant behind the same ticker). Overloading one column with
+           # both would make the type depend on the row.
+           "superseded_by", "succeeded_by"]
 
 
 def _items(s: str) -> set[str]:
@@ -88,7 +94,14 @@ def reconcile(events: pd.DataFrame, filings: pd.DataFrame, *,
         # weak cause: a bankruptcy whose stock moves to OTC as XXXQ, or a
         # de-SPAC whose units become common, keep their filing-based cause.
         kind = getattr(r, "superseded_kind", "") or ""
-        if cause in WEAK and kind:
+        # SUCCESSION overrides *any* filing-derived cause, and it is the only
+        # override that does. The old registrant really did file Form 25 and
+        # Form 15, so the filings genuinely read MERGER_ACQUISITION -- that is
+        # what makes this class invisible to a filings-only method, and why 53
+        # of these carried the one label a reader would most trust.
+        if kind == "SUCCESSION":
+            cause = "SUCCESSION"
+        elif cause in WEAK and kind:
             cause = kind
         # A listing that reappears on another exchange with only an
         # issuer-filed Form 25 behind it is a transfer even if the 8-K also
@@ -105,6 +118,7 @@ def reconcile(events: pd.DataFrame, filings: pd.DataFrame, *,
             "evidence_accessions": ",".join(sorted(evidence["accession"])) if len(evidence) else "",
             "n_filings_in_window": int(len(w)),
             "superseded_by": getattr(r, "superseded_by", "") or "",
+            "succeeded_by": getattr(r, "succeeded_by", "") or "",
         })
     return pd.DataFrame(out, columns=COLUMNS)
 
