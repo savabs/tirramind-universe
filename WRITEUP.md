@@ -86,11 +86,33 @@ the SEC file alone is missing them.
 
 ## The insider ledger
 
-*(filled in when Form 144 collection completes)* — Form 144 notices of
-intent to sell, linked to the Form 4 sales that executed them, with
-execution rates by horizon, cluster-bootstrap intervals and effective
-sample sizes. The SEC's free insider datasets cover Forms 3/4/5 only;
-nobody publishes this linkage.
+Form 144 is the notice an insider must file *concurrently* with placing an
+order to sell restricted stock; Form 4 is the report of the sale. The SEC's
+free bulk datasets cover Forms 3/4/5 only, so the notice-to-execution link
+has to be built from 37,651 Form 144 XML filings one by one.
+
+Of the 11,586 notices whose 90-day window is fully covered by Form 4 data
+(through 2026-03-31; later notices are collected but not scored until the
+Form 4 fill completes):
+
+| segment | executed within 90d | 90% CI (issuer-week cluster bootstrap) | n | n_eff |
+|---|---|---|---|---|
+| all | **66.0%** | 64.9–67.1 | 11,586 | 8,695 |
+| officers | 74.6% | 73.3–75.9 | 6,839 | 5,742 |
+| directors | 72.8% | 70.8–74.6 | 2,625 | 2,411 |
+| matched by owner CIK | 75.3% | 74.1–76.3 | 10,159 | 8,368 |
+
+61.5% of notices show a Form 4 sale on the notice day itself, which is what
+"concurrently" means in practice. n_eff is smaller than n because notices
+cluster by issuer and week — one insider files several, several insiders at
+one company file together. The match method is on every row: 83% link by
+owner CIK, the name fallback adds 0.02%, and 17% have no Form 4 sale by that
+owner in [−3, +90] days — counted as not executed, not as missing. Executed
+fraction exceeds 1 in the median because a window catches every sale by that
+owner, including later plans; it is a size signal, not a precision one.
+
+Weekly page (this week's notices, last week's executions, the table above):
+https://savabs.github.io/tirramind-universe/
 
 ## Use it
 
