@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-07T05:05:58+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-07T05:08:54+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -96,7 +96,7 @@ until a last-filing-date check is added.
 | Form 4 transaction rows | 1144483 (sales: 345045) |
 | linked notices | 37651 |
 | match method | cik 83%, none 17%, name 0% |
-| P(sale within 90d), all | 43.1% |
+| P(sale within 90d), all | 66.0% |
 
 Files: `form144_links.parquet` (one row per notice), `accuracy.parquet`
 (rates with cluster-bootstrap CIs and effective n). Weekly page: `docs/index.html`.

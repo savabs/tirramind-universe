@@ -21,7 +21,9 @@ import pandas as pd
 RAW = "https://raw.githubusercontent.com/savabs/tirramind-universe/main/data/"
 TABLES = {"tickers": "tickers_latest.parquet", "events": "events.parquet",
           "delistings": "delistings.parquet", "filings": "filings.parquet",
-          "form144": "form144_links.parquet", "accuracy": "accuracy.parquet"}
+          "form144": "form144_links.parquet", "form144_raw": "form144.parquet",
+          "form4_sales": "form4_sales.parquet", "accuracy": "accuracy.parquet",
+          "disagreements": "disagreements_nasdaq.parquet"}
 CACHE = os.path.join(os.path.expanduser("~"), ".cache", "tirramind")
 
 

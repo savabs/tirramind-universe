@@ -47,12 +47,18 @@ def build(*, snap_root: str = SNAP_ROOT, ledger_root: str = LEDGER_ROOT, out: st
     insider = {}
     if not f144.empty and not f4.empty:
         # dense coverage = bulk-dataset rows; EFTS rows after that are sparse until the fill completes
+        # coverage = last *filing* date in the bulk datasets (transaction dates
+        # carry filer typos such as 2033); EFTS rows beyond it are sparse until
+        # the gap fill completes and must not count as "no sale"
         ds = f4[f4["source"].str.startswith("dataset")] if "source" in f4 else f4
-        cov_ts = pd.to_datetime(ds["transaction_date"], format="%Y-%m-%d", errors="coerce").max()
+        cov_ts = pd.to_datetime(ds["filing_date"], format="%Y-%m-%d", errors="coerce").max()
         cov = cov_ts.strftime("%Y-%m-%d") if pd.notna(cov_ts) else None
         links = link(f144, f4, coverage_end=cov)
         acc = accuracy_table(links)
         links.to_parquet(os.path.join(out, "form144_links.parquet"), index=False)
+        # the raw JSONL ledgers are local (form4 is ~350 MB); publish parquet instead
+        f144.to_parquet(os.path.join(out, "form144.parquet"), index=False)
+        f4[f4["code"].eq("S")].drop(columns=[c for c in ("key",) if c in f4]).to_parquet(os.path.join(out, "form4_sales.parquet"), index=False)
         acc.to_parquet(os.path.join(out, "accuracy.parquet"), index=False)
         render_weekly(links, acc, f144, out=os.path.join(os.path.dirname(out), "docs"))
         mm = links["match_method"].value_counts(normalize=True).to_dict()

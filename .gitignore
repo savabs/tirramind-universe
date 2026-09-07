@@ -4,3 +4,5 @@ __pycache__/
 .cache/
 dist/
 .pytest_cache/
+data/ledgers/form4.jsonl
+data/ledgers/form144.jsonl
