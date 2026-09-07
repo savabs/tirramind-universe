@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-07T05:08:54+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-07T22:43:02+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -10,30 +10,30 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 
 | file | rows | what |
 |---|---|---|
-| `tickers_latest.parquet` | 10415 | current (cik, ticker, name, exchange) |
-| `events.parquet` | 103902 | every change between consecutive snapshots |
-| `delistings.parquet` | 14284 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
+| `tickers_latest.parquet` | 10412 | current (cik, ticker, name, exchange) |
+| `events.parquet` | 103935 | every change between consecutive snapshots |
+| `delistings.parquet` | 14288 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
 | `filings.parquet` | 78635 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
-## Events (267 snapshots, 2017-08-28 → 2026-09-06)
+## Events (268 snapshots, 2017-08-28 → 2026-09-07)
 | event | count |
 |---|---|
-| DELISTED_FROM_MAP | 43693 |
-| LISTED | 47853 |
-| NAME_CHANGED | 8963 |
+| DELISTED_FROM_MAP | 43706 |
+| LISTED | 47863 |
+| NAME_CHANGED | 8973 |
 | SYMBOL_CHANGED | 3393 |
 
 ## What a "removal" is
-`events.parquet` has 43693 raw `DELISTED_FROM_MAP` rows. **50% of
+`events.parquet` has 43706 raw `DELISTED_FROM_MAP` rows. **50% of
 them re-appear later** (`relisted_at`) — the SEC file churns for housekeeping
 reasons. Steps that removed ≥1,500 tickers at once are partial or
 format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
-Of the removals that are neither re-listed nor suspect (14284),
+Of the removals that are neither re-listed nor suspect (14288),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
-not delistings (SYMBOL_CHANGED 1413, EXCHANGE_TRANSFER 234).
+not delistings (SYMBOL_CHANGED 1415, EXCHANGE_TRANSFER 235).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12637 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12638 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -55,12 +55,12 @@ delisting; that share is inside `UNKNOWN`.
 ### By exchange, removals since 2022
 | exchange | BANKRUPTCY | DEREGISTRATION | EXCHANGE_DELISTING | MERGER_ACQUISITION | UNKNOWN | VOLUNTARY_DELISTING | total | known |
 |---|---|---|---|---|---|---|---|---|
-| (blank) | 62 | 26 | 117 | 30 | 1112 | 6 | 1353 | 18% |
+| (blank) | 62 | 26 | 117 | 30 | 1118 | 6 | 1359 | 18% |
 | CBOE | 0 | 0 | 18 | 0 | 10 | 0 | 28 | 64% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 33 | 4 | 1040 | 547 | 110 | 12 | 1746 | 94% |
-| Nasdaq | 103 | 17 | 1401 | 1193 | 207 | 38 | 2959 | 93% |
-| OTC | 152 | 159 | 253 | 110 | 2638 | 16 | 3328 | 21% |
+| NYSE | 33 | 4 | 1039 | 546 | 111 | 12 | 1745 | 94% |
+| Nasdaq | 103 | 17 | 1400 | 1193 | 208 | 38 | 2959 | 93% |
+| OTC | 152 | 158 | 252 | 110 | 2636 | 16 | 3324 | 21% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
 going-private of an ADR shows as `EXCHANGE_DELISTING` (Form 25 only) or
@@ -88,15 +88,3 @@ until a last-filing-date check is added.
 | EX-99.3 | 1 |
 | EX-99.4 | 1 |
 | EX-99.8 | 1 |
-
-## Form 144 → Form 4 ledger
-| | |
-|---|---|
-| Form 144 notices | 37651 |
-| Form 4 transaction rows | 1144483 (sales: 345045) |
-| linked notices | 37651 |
-| match method | cik 83%, none 17%, name 0% |
-| P(sale within 90d), all | 66.0% |
-
-Files: `form144_links.parquet` (one row per notice), `accuracy.parquet`
-(rates with cluster-bootstrap CIs and effective n). Weekly page: `docs/index.html`.
