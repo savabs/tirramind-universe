@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-07T23:53:13+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-08T22:42:52+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -13,7 +13,7 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 | `tickers_latest.parquet` | 10412 | current (cik, ticker, name, exchange) |
 | `events.parquet` | 103935 | every change between consecutive snapshots |
 | `delistings.parquet` | 14288 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 78635 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `filings.parquet` | 78660 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
 ## Events (268 snapshots, 2017-08-28 → 2026-09-07)
 | event | count |
@@ -73,15 +73,15 @@ until a last-filing-date check is added.
 |---|---|
 | 15-12B | 2016 |
 | 15-12B/A | 32 |
-| 15-12G | 3810 |
+| 15-12G | 3817 |
 | 15-12G/A | 112 |
-| 15-15D | 2011 |
+| 15-15D | 2012 |
 | 15-15D/A | 34 |
-| 25 | 1222 |
-| 25-NSE | 10082 |
+| 25 | 1224 |
+| 25-NSE | 10089 |
 | 25-NSE/A | 143 |
 | 25/A | 15 |
-| 8-K | 56799 |
+| 8-K | 56807 |
 | 8-K/A | 2334 |
 | CORRESP | 6 |
 | EX-99.1 | 9 |
@@ -89,15 +89,3 @@ until a last-filing-date check is added.
 | EX-99.3 | 1 |
 | EX-99.4 | 1 |
 | EX-99.8 | 1 |
-
-## Form 144 → Form 4 ledger
-| | |
-|---|---|
-| Form 144 notices | 37651 |
-| Form 4 transaction rows | 1264197 (sales: 397450) |
-| linked notices | 37651 |
-| match method | cik 90%, none 10%, name 0% |
-| P(sale within 90d), all | 68.2% |
-
-Files: `form144_links.parquet` (one row per notice), `accuracy.parquet`
-(rates with cluster-bootstrap CIs and effective n). Weekly page: `docs/index.html`.
