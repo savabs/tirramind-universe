@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-09-22T22:43:14+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-09-23T22:43:19+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -10,31 +10,31 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 
 | file | rows | what |
 |---|---|---|
-| `tickers_latest.parquet` | 10459 | current (cik, ticker, name, exchange) |
-| `events.parquet` | 104268 | every change between consecutive snapshots |
-| `delistings.parquet` | 14358 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 78840 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `tickers_latest.parquet` | 10461 | current (cik, ticker, name, exchange) |
+| `events.parquet` | 104274 | every change between consecutive snapshots |
+| `delistings.parquet` | 14359 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
+| `filings.parquet` | 78856 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
-## Events (273 snapshots, 2017-08-28 → 2026-09-21)
+## Events (274 snapshots, 2017-08-28 → 2026-09-23)
 | event | count |
 |---|---|
-| DELISTED_FROM_MAP | 43811 |
+| DELISTED_FROM_MAP | 43812 |
 | EXCHANGE_CHANGED | 7 |
-| LISTED | 48015 |
-| NAME_CHANGED | 9036 |
+| LISTED | 48018 |
+| NAME_CHANGED | 9038 |
 | SYMBOL_CHANGED | 3399 |
 
 ## What a "removal" is
-`events.parquet` has 43811 raw `DELISTED_FROM_MAP` rows. **50% of
+`events.parquet` has 43812 raw `DELISTED_FROM_MAP` rows. **50% of
 them re-appear later** (`relisted_at`) — the SEC file churns for housekeeping
 reasons. Steps that removed ≥1,500 tickers at once are partial or
 format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
-Of the removals that are neither re-listed nor suspect (14358),
+Of the removals that are neither re-listed nor suspect (14359),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
 not delistings (SYMBOL_CHANGED 1437, EXCHANGE_TRANSFER 237, SUCCESSION 191).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12493 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12494 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -60,7 +60,7 @@ delisting; that share is inside `UNKNOWN`.
 | (blank) | 62 | 26 | 118 | 29 | 1108 | 6 | 1349 | 18% |
 | CBOE | 0 | 0 | 19 | 0 | 12 | 0 | 31 | 61% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 33 | 4 | 1030 | 535 | 109 | 12 | 1723 | 94% |
+| NYSE | 33 | 4 | 1030 | 536 | 109 | 12 | 1724 | 94% |
 | Nasdaq | 104 | 8 | 1403 | 1188 | 209 | 38 | 2950 | 93% |
 | OTC | 153 | 159 | 256 | 106 | 2639 | 16 | 3329 | 21% |
 
@@ -76,13 +76,13 @@ until a last-filing-date check is added.
 | 15-12B/A | 32 |
 | 15-12G | 3825 |
 | 15-12G/A | 112 |
-| 15-15D | 2021 |
+| 15-15D | 2022 |
 | 15-15D/A | 34 |
 | 25 | 1229 |
-| 25-NSE | 10116 |
+| 25-NSE | 10118 |
 | 25-NSE/A | 143 |
 | 25/A | 15 |
-| 8-K | 56936 |
+| 8-K | 56949 |
 | 8-K/A | 2336 |
 | CORRESP | 6 |
 | EX-99.1 | 9 |
