@@ -715,3 +715,5 @@
 {"captured_at": "2026-10-06T02:28:54+00:00", "digest": "1d3e1b8b710fddd1", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-06_1d3e1b8b710fddd1.csv.gz", "rows": 13252, "source": "live", "status": "new"}
 {"captured_at": "2026-10-07T01:47:09+00:00", "digest": "318aff0b229f47b7", "error": null, "name": "tickers", "path": null, "rows": 10434, "source": "live", "status": "unchanged"}
 {"captured_at": "2026-10-07T01:47:09+00:00", "digest": "700b4563259401c0", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-07_700b4563259401c0.csv.gz", "rows": 13252, "source": "live", "status": "new"}
+{"captured_at": "2026-10-08T02:14:43+00:00", "digest": "318aff0b229f47b7", "error": null, "name": "tickers", "path": null, "rows": 10434, "source": "live", "status": "unchanged"}
+{"captured_at": "2026-10-08T02:14:43+00:00", "digest": "7297f8d63986ac96", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-08_7297f8d63986ac96.csv.gz", "rows": 13251, "source": "live", "status": "new"}
