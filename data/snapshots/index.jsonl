@@ -723,3 +723,5 @@
 {"captured_at": "2026-10-10T01:54:06+00:00", "digest": "39ed6b6a6cc0740a", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-10_39ed6b6a6cc0740a.csv.gz", "rows": 13260, "source": "live", "status": "new"}
 {"captured_at": "2026-10-13T03:09:04+00:00", "digest": "22c45e0ed17fac54", "error": null, "name": "tickers", "path": "tickers/2026-10-13_22c45e0ed17fac54.csv.gz", "rows": 10445, "source": "live", "status": "new"}
 {"captured_at": "2026-10-13T03:09:05+00:00", "digest": "829368c111518a96", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-13_829368c111518a96.csv.gz", "rows": 13259, "source": "live", "status": "new"}
+{"captured_at": "2026-10-14T01:22:00+00:00", "digest": "fbd261a52bb37e62", "error": null, "name": "tickers", "path": "tickers/2026-10-14_fbd261a52bb37e62.csv.gz", "rows": 10445, "source": "live", "status": "new"}
+{"captured_at": "2026-10-14T01:22:01+00:00", "digest": "04422528a4b9239f", "error": null, "name": "nasdaq_dir", "path": "nasdaq_dir/2026-10-14_04422528a4b9239f.csv.gz", "rows": 13248, "source": "live", "status": "new"}
