@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-10-22T00:53:08+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-10-23T00:54:52+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -10,31 +10,31 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 
 | file | rows | what |
 |---|---|---|
-| `tickers_latest.parquet` | 10443 | current (cik, ticker, name, exchange) |
-| `events.parquet` | 104692 | every change between consecutive snapshots |
-| `delistings.parquet` | 14511 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 79275 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `tickers_latest.parquet` | 10428 | current (cik, ticker, name, exchange) |
+| `events.parquet` | 104767 | every change between consecutive snapshots |
+| `delistings.parquet` | 14544 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
+| `filings.parquet` | 79301 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
-## Events (286 snapshots, 2017-08-28 → 2026-10-20)
+## Events (287 snapshots, 2017-08-28 → 2026-10-23)
 | event | count |
 |---|---|
-| DELISTED_FROM_MAP | 43991 |
+| DELISTED_FROM_MAP | 44028 |
 | EXCHANGE_CHANGED | 30 |
-| LISTED | 48179 |
-| NAME_CHANGED | 9084 |
-| SYMBOL_CHANGED | 3408 |
+| LISTED | 48201 |
+| NAME_CHANGED | 9098 |
+| SYMBOL_CHANGED | 3410 |
 
 ## What a "removal" is
-`events.parquet` has 43991 raw `DELISTED_FROM_MAP` rows. **50% of
+`events.parquet` has 44028 raw `DELISTED_FROM_MAP` rows. **50% of
 them re-appear later** (`relisted_at`) — the SEC file churns for housekeeping
 reasons. Steps that removed ≥1,500 tickers at once are partial or
 format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
-Of the removals that are neither re-listed nor suspect (14511),
+Of the removals that are neither re-listed nor suspect (14544),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
-not delistings (SYMBOL_CHANGED 1453, EXCHANGE_TRANSFER 241, SUCCESSION 191).
+not delistings (SYMBOL_CHANGED 1459, EXCHANGE_TRANSFER 244, SUCCESSION 191).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12626 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12650 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -48,7 +48,7 @@ delisting; that share is inside `UNKNOWN`.
 | EXCHANGE_DELISTING | 25.9% |
 | MERGER_ACQUISITION | 19.9% |
 | VOLUNTARY_DELISTING | 0.6% |
-| DEREGISTRATION | 1.9% |
+| DEREGISTRATION | 2.0% |
 | EXCHANGE_TRANSFER | 0.0% |
 | SYMBOL_CHANGED | 0.0% |
 | SUCCESSION | 0.0% |
@@ -57,12 +57,12 @@ delisting; that share is inside `UNKNOWN`.
 ### By exchange, removals since 2022
 | exchange | BANKRUPTCY | DEREGISTRATION | EXCHANGE_DELISTING | MERGER_ACQUISITION | UNKNOWN | VOLUNTARY_DELISTING | total | known |
 |---|---|---|---|---|---|---|---|---|
-| (blank) | 62 | 26 | 118 | 29 | 1147 | 6 | 1388 | 17% |
+| (blank) | 62 | 27 | 118 | 29 | 1148 | 6 | 1390 | 17% |
 | CBOE | 0 | 0 | 19 | 0 | 12 | 0 | 31 | 61% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 33 | 4 | 1037 | 543 | 110 | 12 | 1739 | 94% |
-| Nasdaq | 105 | 9 | 1415 | 1202 | 212 | 38 | 2981 | 93% |
-| OTC | 154 | 162 | 260 | 109 | 2677 | 16 | 3378 | 21% |
+| NYSE | 33 | 4 | 1038 | 543 | 110 | 12 | 1740 | 94% |
+| Nasdaq | 106 | 9 | 1420 | 1206 | 213 | 38 | 2992 | 93% |
+| OTC | 155 | 163 | 261 | 109 | 2684 | 16 | 3388 | 21% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
 going-private of an ADR shows as `EXCHANGE_DELISTING` (Form 25 only) or
@@ -76,14 +76,14 @@ until a last-filing-date check is added.
 | 15-12B/A | 32 |
 | 15-12G | 3852 |
 | 15-12G/A | 112 |
-| 15-15D | 2038 |
+| 15-15D | 2039 |
 | 15-15D/A | 34 |
 | 25 | 1250 |
-| 25-NSE | 10203 |
-| 25-NSE/A | 145 |
+| 25-NSE | 10206 |
+| 25-NSE/A | 146 |
 | 25/A | 15 |
-| 8-K | 57213 |
-| 8-K/A | 2340 |
+| 8-K | 57233 |
+| 8-K/A | 2341 |
 | CORRESP | 6 |
 | EX-99.1 | 9 |
 | EX-99.2 | 7 |
