@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-10-30T02:07:48+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-10-31T01:47:08+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -13,7 +13,7 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 | `tickers_latest.parquet` | 10430 | current (cik, ticker, name, exchange) |
 | `events.parquet` | 104858 | every change between consecutive snapshots |
 | `delistings.parquet` | 14570 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 79409 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `filings.parquet` | 79437 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
 ## Events (291 snapshots, 2017-08-28 → 2026-10-29)
 | event | count |
@@ -32,9 +32,9 @@ format-shifted captures and are flagged `suspect`: 2020-06-05, 2021-08-09.
 Of the removals that are neither re-listed nor suspect (14570),
 those whose CIK gained a *different* ticker within ±60 days **and** have no
 stronger filing evidence are two-step symbol changes or exchange transfers,
-not delistings (SYMBOL_CHANGED 1467, EXCHANGE_TRANSFER 244, SUCCESSION 191).
+not delistings (SYMBOL_CHANGED 1466, EXCHANGE_TRANSFER 244, SUCCESSION 191).
 They stay in `delistings.parquet` with that cause; the shares below are
-over the remaining 12668 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
+over the remaining 12669 true delistings. The raw rows stay in `events.parquet`; nothing is deleted.
 
 ## Delisting causes
 `UNKNOWN` means no qualifying filing was found on that CIK within
@@ -61,7 +61,7 @@ delisting; that share is inside `UNKNOWN`.
 | CBOE | 0 | 0 | 19 | 0 | 12 | 0 | 31 | 61% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
 | NYSE | 33 | 4 | 1042 | 545 | 110 | 12 | 1746 | 94% |
-| Nasdaq | 107 | 9 | 1423 | 1207 | 213 | 38 | 2997 | 93% |
+| Nasdaq | 107 | 9 | 1423 | 1208 | 213 | 38 | 2998 | 93% |
 | OTC | 156 | 163 | 262 | 110 | 2687 | 16 | 3394 | 21% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
@@ -76,13 +76,13 @@ until a last-filing-date check is added.
 | 15-12B/A | 32 |
 | 15-12G | 3863 |
 | 15-12G/A | 112 |
-| 15-15D | 2041 |
+| 15-15D | 2043 |
 | 15-15D/A | 34 |
 | 25 | 1252 |
-| 25-NSE | 10226 |
+| 25-NSE | 10231 |
 | 25-NSE/A | 146 |
 | 25/A | 15 |
-| 8-K | 57306 |
+| 8-K | 57327 |
 | 8-K/A | 2341 |
 | CORRESP | 6 |
 | EX-99.1 | 9 |
