@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-11-11T02:13:40+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-11-12T03:19:30+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -15,7 +15,7 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 | `delistings.parquet` | 14675 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
 | `filings.parquet` | 79589 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
-## Events (296 snapshots, 2017-08-28 → 2026-11-11)
+## Events (297 snapshots, 2017-08-28 → 2026-11-12)
 | event | count |
 |---|---|
 | DELISTED_FROM_MAP | 44183 |
