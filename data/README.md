@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-11-13T02:53:06+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-11-14T02:40:26+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -13,7 +13,7 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 | `tickers_latest.parquet` | 10405 | current (cik, ticker, name, exchange) |
 | `events.parquet` | 105145 | every change between consecutive snapshots |
 | `delistings.parquet` | 14675 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 79620 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `filings.parquet` | 79649 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
 ## Events (297 snapshots, 2017-08-28 → 2026-11-12)
 | event | count |
@@ -44,7 +44,7 @@ delisting; that share is inside `UNKNOWN`.
 
 | cause | share |
 |---|---|
-| BANKRUPTCY | 3.3% |
+| BANKRUPTCY | 3.4% |
 | EXCHANGE_DELISTING | 25.9% |
 | MERGER_ACQUISITION | 19.9% |
 | VOLUNTARY_DELISTING | 0.6% |
@@ -60,9 +60,9 @@ delisting; that share is inside `UNKNOWN`.
 | (blank) | 62 | 27 | 117 | 29 | 1154 | 6 | 1395 | 17% |
 | CBOE | 0 | 0 | 19 | 0 | 12 | 0 | 31 | 61% |
 | NAS | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 100% |
-| NYSE | 33 | 4 | 1045 | 549 | 120 | 12 | 1763 | 93% |
+| NYSE | 34 | 4 | 1044 | 549 | 120 | 12 | 1763 | 93% |
 | Nasdaq | 107 | 10 | 1437 | 1211 | 213 | 38 | 3016 | 93% |
-| OTC | 157 | 166 | 265 | 112 | 2724 | 16 | 3440 | 21% |
+| OTC | 158 | 166 | 264 | 112 | 2724 | 16 | 3440 | 21% |
 | TXSE | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 100% |
 
 Known blind spots: foreign private issuers file 6-K/20-F, not 8-K, so a
@@ -79,11 +79,11 @@ until a last-filing-date check is added.
 | 15-12G/A | 112 |
 | 15-15D | 2047 |
 | 15-15D/A | 34 |
-| 25 | 1259 |
-| 25-NSE | 10265 |
+| 25 | 1260 |
+| 25-NSE | 10270 |
 | 25-NSE/A | 146 |
 | 25/A | 15 |
-| 8-K | 57444 |
+| 8-K | 57467 |
 | 8-K/A | 2343 |
 | CORRESP | 6 |
 | EX-99.1 | 9 |
