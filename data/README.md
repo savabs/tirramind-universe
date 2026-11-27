@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-11-26T04:20:50+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-11-27T04:30:09+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
