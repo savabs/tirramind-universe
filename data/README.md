@@ -1,6 +1,6 @@
 # Data
 
-Built 2026-11-27T04:30:09+00:00 by tirramind 0.1.0. Derived from SEC public
+Built 2026-11-28T04:12:57+00:00 by tirramind 0.1.0. Derived from SEC public
 filings only (sec.gov: `company_tickers.json`, `company_tickers_exchange.json`,
 EDGAR full-text search). Licence: CC-BY-4.0, attribution "derived from SEC
 public filings". Nothing here is investment advice.
@@ -13,7 +13,7 @@ Wayback Machine (roughly monthly); daily resolution starts 2026-09-06.
 | `tickers_latest.parquet` | 10400 | current (cik, ticker, name, exchange) |
 | `events.parquet` | 105375 | every change between consecutive snapshots |
 | `delistings.parquet` | 14744 | permanent removals (not re-listed, not from a suspect capture) with a cause and evidence accessions |
-| `filings.parquet` | 79880 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
+| `filings.parquet` | 79902 | Form 25 / 15 and item-filtered 8-K filings, 2015→ |
 
 ## Events (303 snapshots, 2017-08-28 → 2026-11-25)
 | event | count |
@@ -75,15 +75,15 @@ until a last-filing-date check is added.
 |---|---|
 | 15-12B | 2016 |
 | 15-12B/A | 32 |
-| 15-12G | 3891 |
+| 15-12G | 3894 |
 | 15-12G/A | 112 |
 | 15-15D | 2052 |
 | 15-15D/A | 34 |
 | 25 | 1266 |
-| 25-NSE | 10312 |
+| 25-NSE | 10314 |
 | 25-NSE/A | 146 |
 | 25/A | 15 |
-| 8-K | 57633 |
+| 8-K | 57650 |
 | 8-K/A | 2345 |
 | CORRESP | 6 |
 | EX-99.1 | 10 |
